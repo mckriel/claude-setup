@@ -2,6 +2,26 @@
 
 This guide explains how the Claude Code agent system works in this project. If you've never used agents before, start here.
 
+## Table of Contents
+
+- [Quick Setup](#quick-setup)
+- [The Two Building Blocks](#the-two-building-blocks)
+- [Using Commands (Slash Commands)](#using-commands-slash-commands)
+  - [Available Commands](#available-commands)
+  - [How to Run a Command](#how-to-run-a-command)
+  - [What Happens Behind the Scenes](#what-happens-behind-the-scenes)
+- [Understanding Agents](#understanding-agents)
+  - [Agent Roster](#agent-roster)
+  - [Agents You Never Need to Think About](#agents-you-never-need-to-think-about)
+- [Command vs Agent: When to Use What](#command-vs-agent-when-to-use-what)
+- [The `/hld` Command is Different](#the-hld-command-is-different)
+- [The `/coach` Command is Different](#the-coach-command-is-different)
+  - [Recommended Learning Workflow](#recommended-learning-workflow)
+- [Project Structure Reference](#project-structure-reference)
+- [Documentation Files Explained](#documentation-files-explained)
+  - [How to Populate These Files](#how-to-populate-these-files)
+- [Common Mistakes](#common-mistakes)
+
 ## Quick Setup
 
 Pull the setup into any project:
@@ -64,6 +84,7 @@ Commands are your primary interface. You type them directly into Claude Code's c
 | `/code-review` | Reviews recent code changes for critical issues | `/code-review` or `/code-review the payments module` |
 | `/observe` | Explores and explains how the codebase works | `/observe how does the authentication flow work` |
 | `/hld` | Walks you through creating a High-Level Design document via Q&A | `/hld user-notifications` |
+| `/coach` | Guides you through implementing a feature yourself — gives contracts, test cases, and concepts, never code | `/coach build the caching layer from the HLD` |
 
 ### How to Run a Command
 
@@ -103,6 +124,7 @@ Agents are specialist workers. Each one has a narrow focus and a specific set of
 | **code-reviewer** | Reviewing code quality | Read files. Run commands. Cannot edit. |
 | **debugger** | Finding root causes | Read, write, edit files. Run commands. |
 | **observer** | Understanding the codebase | Read files. Run commands. Cannot edit. |
+| **coach** | Guiding you through implementation | Read files. Run commands. Cannot edit. |
 | **docs-guide** | Reading project documentation | Read files only. |
 | **docs-writer** | Updating project documentation | Read, write, edit files. |
 
@@ -132,6 +154,7 @@ If you find yourself wanting to call an agent directly, use the corresponding co
 | Review code | `/code-review` |
 | Understand the codebase | `/observe` |
 | Design a new feature | `/hld` |
+| Learn by building it yourself | `/coach` |
 
 ## The `/hld` Command is Different
 
@@ -150,6 +173,43 @@ Run it like this:
 
 It writes the final document to `docs/hlds/<feature-name>.md`.
 
+## The `/coach` Command is Different
+
+Unlike `/implement`, which writes code for you, `/coach` makes you write every line yourself. It gives you:
+
+- **Interfaces and contracts** — what your component must accept, return, and guarantee
+- **Test cases** — concrete scenarios that define "done", including edge cases and error paths
+- **Concepts and patterns** — the design principles at play and why they apply, with references to existing code in your project
+- **Probing questions** — forces you to think about things you'd otherwise miss
+
+It will never give you implementation code. When you get stuck and ask follow-up questions, it explains the concept you're missing or points you to an example in the codebase — it doesn't hand you the answer.
+
+### Recommended Learning Workflow
+
+```
+/hld feature-name          → design the system (interactive Q&A)
+/coach feature-name        → get your building spec (contracts + test cases)
+you write the code         → the actual learning happens here
+/code-review               → get your code torn apart
+you fix it yourself        → ask /coach if you don't understand the feedback
+/test                      → validate coverage gaps you missed
+```
+
+### Example
+
+```
+/coach add JWT authentication to the API
+```
+
+The coach will respond with something like:
+
+- **Contract:** middleware that extracts a Bearer token, validates it, and attaches the user to the request context. Must reject expired tokens, malformed tokens, and missing tokens with appropriate HTTP status codes.
+- **Test cases:** valid token → 200 with user attached, expired token → 401, no header → 401, malformed header → 401, valid token but user deleted → 401
+- **Patterns:** reference how existing middleware in your project works, explain the middleware chain pattern
+- **Questions:** "What happens to in-flight requests when you rotate the signing key?"
+
+You build it. When you're stuck, ask. It teaches — it doesn't type for you.
+
 ## Project Structure Reference
 
 ```
@@ -161,12 +221,14 @@ It writes the final document to `docs/hlds/<feature-name>.md`.
     code-review.md
     observe.md
     hld.md
+    coach.md
   agents/            <-- Agent definitions (system-facing)
     implementer.md
     debugger.md
     tester.md
     code-reviewer.md
     observer.md
+    coach.md
     docs-guide.md
     docs-writer.md
 docs/                <-- Project documentation (agents read/write this)
