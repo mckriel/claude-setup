@@ -2,6 +2,43 @@
 
 This guide explains how the Claude Code agent system works in this project. If you've never used agents before, start here.
 
+## Quick Setup
+
+Pull the setup into any project:
+
+```bash
+npx degit mckriel/claude-setup/.claude .claude --force
+npx degit mckriel/claude-setup/docs docs --force
+curl -sO https://raw.githubusercontent.com/mckriel/claude-setup/main/CLAUDE.md
+```
+
+Or add this function to your `~/.zshrc`:
+
+```bash
+claude-init() {
+  local force=false
+  [[ "$1" == "--force" ]] && force=true
+
+  local existing=()
+  [[ -d ".claude" ]] && existing+=(".claude/")
+  [[ -d "docs" ]] && existing+=("docs/")
+  [[ -f "CLAUDE.md" ]] && existing+=("CLAUDE.md")
+
+  if [[ ${#existing[@]} -gt 0 ]] && [[ "$force" == false ]]; then
+    echo "⚠️  Found existing: ${existing[*]}"
+    echo "This will overwrite them. Run 'claude-init --force' to proceed."
+    return 1
+  fi
+
+  npx degit mckriel/claude-setup/.claude .claude --force || { echo "❌ Failed to fetch .claude/"; return 1; }
+  npx degit mckriel/claude-setup/docs docs --force || { echo "❌ Failed to fetch docs/"; return 1; }
+  curl -sfO https://raw.githubusercontent.com/mckriel/claude-setup/main/CLAUDE.md || { echo "❌ Failed to fetch CLAUDE.md"; return 1; }
+  echo "✅ Claude setup initialized!"
+}
+```
+
+Then `source ~/.zshrc` and run `claude-init` in any project directory. Use `claude-init --force` to overwrite existing files.
+
 ## The Two Building Blocks
 
 This project has two things that work together:
